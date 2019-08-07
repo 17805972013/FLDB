@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QCustomPlot/qcustomplot.h>
 #include <time.h>
+#include <sstream>
 #include "node.h"
 namespace Ui {
 class MainWindow;
@@ -20,11 +21,15 @@ public:
 	~MainWindow();
 private slots:
 	void UpdatePosition();
+	void pauseEvent();
+	void continueEvent();
 
 private:
-	Ui::MainWindow *ui;
 	QTimer eventTimer;
-	Administer administer;
+	Administer* administer;
+	int running;
+	Ui::MainWindow *ui;
+
 
 };
 

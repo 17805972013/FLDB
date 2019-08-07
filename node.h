@@ -10,14 +10,12 @@ class Node;
 class Administer
 {
 public:
-	/* 初始节点信息 */
-	void initNode();
 	/* 当前节点信息 */
 	std::vector<Node> AllNode;
 	/* 更新节点的邻居表信息 */
 	void UpdateNeighber(Node* node);
 	/* 处理消息 */
-	void handleMessage(cMessage* msg);
+	void handleMessage(cMessage* msg,Node* node);
 };
 class Node
 {
@@ -37,11 +35,11 @@ public:
 	/* 位置信息 */
 	double posx,posy;
 	/* 邻居表 */
-	std::vector<Node> NeighberNode;
+	std::vector<Node>* NeighberNode;
 	/* 接收消息 */
 	void recvMessage(cMessage* msg);
 	/* 消息处理 */
-	void handleMessage(cMessage* msg);
+	void handleMessage(cMessage* msg,Administer* administer);
 
 };
 #endif // NODE_H

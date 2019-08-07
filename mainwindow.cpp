@@ -7,13 +7,21 @@ MainWindow::MainWindow(QWidget *parent) :
 {
 	ui->setupUi(this);
 	setGeometry(400, 100, 600, 610); // 1120
+	/* 暂停，继续控制键 */
+	QMenu *editMenu = ui->menuBar->addMenu(tr("edit"));
+	QAction *pauseAction = editMenu->addAction(tr("pause"), this, SLOT(pauseEvent()));
+	QAction *continueAction = editMenu->addAction(tr("continue"), this, SLOT(continueEvent()));
+	ui->mainToolBar->addAction(pauseAction);
+	ui->mainToolBar->addAction(continueAction);
+
 	/* 产生随机粒子 */
 	srand(time(NULL));
 	/* 初始化界面 */
+	administer = new Administer;
 	initplot();
 	/* SLOT槽中的函数必须被定义在private slots:下才能调用 */
 	connect(&eventTimer, SIGNAL(timeout()), this, SLOT(UpdatePosition()));
-	eventTimer.start(1000);
+	eventTimer.start(100);
 
 }
 void MainWindow::initplot()
@@ -30,11 +38,33 @@ void MainWindow::initplot()
 
 	/* 初始位置信息 */
 	QVector<double> xCoord,yCoord;
+	std::stringstream ss;
 	for(int i = 0;i < 10;++i){
-		xCoord.push_back(rand()%(10+1));
-		yCoord.push_back(rand()%(10+1));
-	}
+		double x,y;
+		x = rand()%(10+1);
+		y = rand()%(10+1);
+		xCoord.push_back(x);
+		yCoord.push_back(y);
 
+		Node node;
+		ss<<i;
+		ss>>node.name;
+		ss.clear();
+
+		QCPItemText* RSU = new QCPItemText(ui->customPlot);
+		RSU->position->setCoords(x,y);
+		RSU->setText(node.name);
+
+		node.BPIT = 10;
+		node.posx = x;
+		node.posy = y;
+		node.radius = 10;
+		node.speed = 1;
+		administer->AllNode.push_back(node);
+	}
+	/* 获取邻居节点信息 */
+	for(int i = 0;i < administer->AllNode.size();++i )
+		administer->UpdateNeighber(&administer->AllNode[i]);
 
 	/* 用于设置x轴与y轴的刻度标签 */
 	ui->customPlot->xAxis2->setVisible(true);
@@ -57,7 +87,36 @@ void MainWindow::initplot()
 }
 void MainWindow::UpdatePosition()
 {
+	if(!running)
+		return;
+	/* 用于清除数据，其中graph(0)中的0代表的是初始的那张图 */
+	ui->customPlot->graph(0)->data().data()->clear();
+	ui->customPlot->clearItems();
+	cMessage* msg;
+	for(int i = 0;i < administer->AllNode.size();++i){
+		administer->AllNode[i].handleMessage(msg,administer);
+		QCPItemText* RSU = new QCPItemText(ui->customPlot);
+		RSU->position->setCoords(administer->AllNode[i].posx,administer->AllNode[i].posy);
+		RSU->setText(administer->AllNode[i].name);
+	}
+	QVector<double> xCoord,yCoord;
+	for(int i = 0;i < administer->AllNode.size();++i){
+		xCoord.push_back(administer->AllNode[i].posx);
+		yCoord.push_back(administer->AllNode[i].posy);
+	}
+	ui->customPlot->graph(0)->setData(xCoord,yCoord);
+	ui->customPlot->replot();
 
+}
+void MainWindow::pauseEvent()
+{
+	running = 0;
+	qDebug().nospace()<<"pauseEvent()";
+}
+void MainWindow::continueEvent()
+{
+	running = 1;
+	qDebug().nospace()<<"continueEvent()";
 }
 MainWindow::~MainWindow()
 {
