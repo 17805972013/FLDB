@@ -6,6 +6,7 @@
 #include <time.h>
 #include <sstream>
 #include "node.h"
+class Schedule;
 namespace Ui {
 class MainWindow;
 }
@@ -13,11 +14,11 @@ class MainWindow;
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
-
 public:
 	explicit MainWindow(QWidget *parent = 0);
 	void initplot();
-
+	/* 贪婪右手转发策略 */
+	void Greedy_Right_Method();
 	~MainWindow();
 private slots:
 	void UpdatePosition();
@@ -26,11 +27,11 @@ private slots:
 
 private:
 	QTimer eventTimer;
-	Administer* administer;
 	int running;
+	Administer* administer;
 	Ui::MainWindow *ui;
+	double Outcircle,Innercircle;
 
 
 };
-
 #endif // MAINWINDOW_H

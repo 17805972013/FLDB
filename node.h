@@ -16,10 +16,15 @@ public:
 	void UpdateNeighber(Node* node);
 	/* 处理消息 */
 	void handleMessage(cMessage* msg,Node* node);
+	/* 记录源节点与目的节点 */
+	Node *src;
+	Node *dest;
 };
 class Node
 {
 public:
+	/* 消息到达位置 */
+	bool flags;       //flags为假表示消息未到达，否则代表消息到达当前位置
 	/* 源节点位置信息 */
 	double src_x,src_y;
 	/* 目的节点位置信息 */
