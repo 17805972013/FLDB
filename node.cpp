@@ -17,9 +17,12 @@ void Administer::handleMessage(cMessage* msg,Node* node)
 void Node::handleMessage(cMessage* msg,Administer* administer)
 {
 	msg = new cMessage;
+	/* 限定车辆的移动位置 */
+
 	msg->speed = rand()%45;
-	msg->posx = rand()%40;
-	msg->posy = rand()%40;
+	msg->posx = posx + speed*0.1;
+	msg->posy = posy + speed*0.1;
+
 	msg->radius = radius;
 	msg->src_x = administer->src->posx;
 	msg->src_y = administer->src->posy;

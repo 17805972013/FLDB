@@ -6,6 +6,8 @@
 #include <time.h>
 #include <sstream>
 #include "node.h"
+#define RE_SEND
+//#define NoRE_SEND
 class Schedule;
 namespace Ui {
 class MainWindow;
@@ -30,7 +32,14 @@ private:
 	int running;
 	Administer* administer;
 	Ui::MainWindow *ui;
-	double Outcircle,Innercircle;
+	int node_num;
+	double Innercircle;
+	double gx;
+	double _gx;
+	double gy;
+	double _gy;
+	/* 重发时间间隔 */
+	int interval_time;
 
 
 };

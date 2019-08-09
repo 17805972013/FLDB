@@ -21,16 +21,18 @@ MainWindow::MainWindow(QWidget *parent) :
 	initplot();
 	/* SLOT槽中的函数必须被定义在private slots:下才能调用 */
 	connect(&eventTimer, SIGNAL(timeout()), this, SLOT(UpdatePosition()));
-	eventTimer.start(1000);
+	eventTimer.start(300);
 
 }
 void MainWindow::initplot()
 {
-	double gx = 50;
-	double _gx = -10;
-	double gy = 50;
-	double _gy = -10;
-	Innercircle = 2;
+	gx = 50;
+	_gx = -10;
+	gy = 50;
+	_gy = -10;
+	node_num = 30;
+	Innercircle = 4;
+	interval_time = 0;
 	/* 对点参数的设置，实线蓝色 */
 	QPen pen(Qt::SolidLine);
 	pen.setColor(Qt::blue);
@@ -44,7 +46,7 @@ void MainWindow::initplot()
 	/* 初始位置信息 */
 	QVector<double> xCoord,yCoord;
 	std::stringstream ss;
-	for(int i = 0;i < 10;++i){
+	for(int i = 0;i < node_num;++i){
 		double x,y;
 		x = rand()%(40);
 		y = rand()%(40);
@@ -63,7 +65,7 @@ void MainWindow::initplot()
 		node.BPIT = 10;
 		node.posx = x;
 		node.posy = y;
-		node.radius = 4.5;
+		node.radius = 10;
 		node.speed = 0;
 		node.flags = false;
 		node.NeighberNode = NULL;
@@ -72,16 +74,16 @@ void MainWindow::initplot()
 		administer->AllNode.push_back(node);
 	}
 	/* 记录源节点与目的节点 */
-	int src = rand()%10;
-	int dest = rand()%10;
+	int src = rand()%node_num;
+	int dest = rand()%node_num;
 	while(1){
 		if(src != dest){
 			administer->src = &administer->AllNode[src];
 			administer->dest = &administer->AllNode[dest];
 			break;
 		}
-		src = rand()%10;
-		dest = rand()%10;
+		src = rand()%node_num;
+		dest = rand()%node_num;
 	}
 	/* 消息到达位置 */
 	administer->AllNode[src].flags = true;
@@ -137,11 +139,17 @@ void MainWindow::UpdatePosition()
 {
 	if(!running)
 		return;
+	++interval_time;
+	gx = administer->src->posx+30;
+	_gx = administer->src->posx-30;
+	gy = administer->src->posy+30;
+	_gy = administer->src->posy-30;
+	/* 设置x,y轴的范围 */
+	ui->customPlot->xAxis->setRange(_gx, gx);
+	ui->customPlot->yAxis->setRange(_gy, gy);
 	/* 用于清除数据，其中graph(0)中的0代表的是初始的那张图 */
 	ui->customPlot->graph(0)->data().data()->clear();
 	ui->customPlot->clearItems();
-	/* 消息到达位置 */
-	Greedy_Right_Method();
 	cMessage* msg = NULL;
 	for(std::vector<Node>::iterator iter = administer->AllNode.begin();iter != administer->AllNode.end();++iter){
 		(*iter).handleMessage(msg,administer);
@@ -155,6 +163,17 @@ void MainWindow::UpdatePosition()
 		yCoord.push_back((*iter).posy);
 
 	}
+	/* 消息到达位置 */
+	Greedy_Right_Method();
+	if(administer->dest->flags){
+		administer->src = administer->dest;
+		administer->dest = &administer->AllNode[rand()%node_num];
+		while(1){
+			if(strcmp(administer->dest->name,administer->src->name))
+				break;
+			administer->dest = &administer->AllNode[rand()%node_num];
+		}
+	}
 	/*  源节点 */
 	QPen _pen;
 	_pen.setColor(Qt::red);
@@ -164,7 +183,6 @@ void MainWindow::UpdatePosition()
 	_picture->setPen(_pen);
 	/* 目的节点 */
 	_pen.setColor(Qt::darkMagenta);
-//	_pen(Qt::DashLine);
 	QCPItemEllipse *__picture = new QCPItemEllipse(ui->customPlot);
 	__picture->topLeft->setCoords(administer->dest->posx - Innercircle,administer->dest->posy + Innercircle);
 	__picture->bottomRight->setCoords(administer->dest->posx + Innercircle,administer->dest->posy - Innercircle);
@@ -172,6 +190,7 @@ void MainWindow::UpdatePosition()
 
 	ui->customPlot->graph(0)->setData(xCoord,yCoord);
 	/*  画图操作 */
+	#ifdef NoRE_SEND
 	for(std::vector<Node>::iterator iter = administer->AllNode.begin();iter != administer->AllNode.end();++iter)
 		if(iter->flags){
 				QPen _pen;
@@ -182,6 +201,31 @@ void MainWindow::UpdatePosition()
 				picture->setPen(_pen);
 				break;
 		}
+	#endif
+	#ifdef RE_SEND
+	bool _reset = false;
+	for(std::vector<Node>::iterator iter = administer->AllNode.begin();iter != administer->AllNode.end();++iter)
+		if(interval_time == 100){
+			interval_time = 0;
+			_reset = true;
+		}
+	else
+		if(iter->flags){
+			if(_reset){
+				iter->flags = false;
+				iter = administer->AllNode.begin();
+				administer->src->flags = true;
+				_reset = false;
+			}
+				QPen _pen;
+				_pen.setColor(Qt::darkCyan);
+				QCPItemEllipse *picture = new QCPItemEllipse(ui->customPlot);
+				picture->topLeft->setCoords(iter->posx - iter->radius,iter->posy + iter->radius);
+				picture->bottomRight->setCoords(iter->posx + iter->radius,iter->posy - iter->radius);
+				picture->setPen(_pen);
+				break;
+		}
+	#endif
 	ui->customPlot->replot();
 
 }
@@ -208,7 +252,7 @@ void MainWindow::Greedy_Right_Method()
 				return;
 			bool refresh = false;
 			for(std::vector<Node>::iterator _iter = iter->NeighberNode->begin();_iter != iter->NeighberNode->end();++_iter){
-				if(Distance(administer->dest->posx,administer->dest->posy,_iter->posx,_iter->posy) <= distance ){
+				if(Distance(administer->dest->posx,administer->dest->posy,_iter->posx,_iter->posy) < distance ){
 					sel = true;
 					distance = Distance(administer->dest->posx,administer->dest->posy,_iter->posx,_iter->posy);
 					refresh = true;//用于记录上一次的数据
@@ -224,7 +268,8 @@ void MainWindow::Greedy_Right_Method()
 					refresh = false;
 				}
 			}
-
+			if(distance == 0)
+				return;
 			if(sel){
 				qDebug().nospace()<<"Greedy";
 			}
@@ -232,13 +277,14 @@ void MainWindow::Greedy_Right_Method()
 			{
 				/* 右手转发策略 */
 				double the_ta = 2*acos(-1.0);
-
+				bool _refresh = true;
+				refresh = false;
 				for(std::vector<Node>::iterator _iter = iter->NeighberNode->begin();_iter != iter->NeighberNode->end();++_iter){
 					double a = Distance(iter->posx,iter->posy,administer->dest->posx,administer->dest->posy);
 					double b = Distance(iter->posx,iter->posy,_iter->posx,_iter->posy);
 					double c = Distance(_iter->posx,_iter->posy,administer->dest->posx,administer->dest->posy);
-					if(acos((a*a+b*b+c*c)/2*b*c) < the_ta){
-						the_ta = acos((a*a+b*b-c*c)/2*a*b);
+					if(acos((a*a+b*b-c*c)/(2*a*b)) < the_ta){
+						the_ta = acos((a*a+b*b-c*c)/(2*a*b));
 						refresh = true;
 
 					}
@@ -252,8 +298,12 @@ void MainWindow::Greedy_Right_Method()
 						}
 						refresh = false;
 					}
+					if(_refresh){
+						qDebug().nospace()<<"RightHand";
+						_refresh = false;
+					}
 				}
-				qDebug().nospace()<<"RightHand";
+
 			}
 			break;
 		}
