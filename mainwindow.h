@@ -6,8 +6,9 @@
 #include <time.h>
 #include <sstream>
 #include "node.h"
-#define RE_SEND
-//#define NoRE_SEND
+//#define RE_SEND
+#define NoRE_SEND
+#define FLDB
 class Schedule;
 namespace Ui {
 class MainWindow;
@@ -21,6 +22,10 @@ public:
 	void initplot();
 	/* 贪婪右手转发策略 */
 	void Greedy_Right_Method();
+	/* FLDB转发策略 */
+	bool FLDB_set;
+	double FLDB_t;
+	void FLDB_Method(Node* node);
 	~MainWindow();
 private slots:
 	void UpdatePosition();
@@ -40,6 +45,7 @@ private:
 	double _gy;
 	/* 重发时间间隔 */
 	int interval_time;
+
 
 
 };

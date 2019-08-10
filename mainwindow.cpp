@@ -33,6 +33,8 @@ void MainWindow::initplot()
 	node_num = 30;
 	Innercircle = 4;
 	interval_time = 0;
+	FLDB_set = true;
+	FLDB_t = 0;
 	/* 对点参数的设置，实线蓝色 */
 	QPen pen(Qt::SolidLine);
 	pen.setColor(Qt::blue);
@@ -62,7 +64,7 @@ void MainWindow::initplot()
 		RSU->position->setCoords(x,y);
 		RSU->setText(node.name);
 
-		node.BPIT = 10;
+		node.BPIT = 0;
 		node.posx = x;
 		node.posy = y;
 		node.radius = 10;
@@ -103,7 +105,6 @@ void MainWindow::initplot()
 			_picture->setPen(_pen);
 			/* 目的节点 */
 			_pen.setColor(Qt::darkMagenta);
-//			_pen(Qt::DashLine);
 			QCPItemEllipse *__picture = new QCPItemEllipse(ui->customPlot);
 			__picture->topLeft->setCoords(administer->dest->posx - Innercircle,administer->dest->posy + Innercircle);
 			__picture->bottomRight->setCoords(administer->dest->posx + Innercircle,administer->dest->posy - Innercircle);
@@ -140,6 +141,7 @@ void MainWindow::UpdatePosition()
 	if(!running)
 		return;
 	++interval_time;
+	FLDB_t += 0.1;//单位s
 	gx = administer->src->posx+30;
 	_gx = administer->src->posx-30;
 	gy = administer->src->posy+30;
@@ -248,6 +250,19 @@ void MainWindow::Greedy_Right_Method()
 
 		double distance = Distance(administer->dest->posx,administer->dest->posy,iter->posx,iter->posy);
 		if(iter->flags){
+			/* FLDB策略 */
+#ifdef FLDB
+			if(FLDB_set){
+				FLDB_set = false;
+				FLDB_Method(&(*iter));
+			}
+			if(FLDB_t < iter->BPIT){
+				return;
+			}
+			FLDB_set = true;
+			FLDB_t = 0;
+#endif
+			/***********/
 			if(strcmp(administer->dest->name,iter->name) == 0)
 				return;
 			bool refresh = false;
@@ -256,6 +271,7 @@ void MainWindow::Greedy_Right_Method()
 					sel = true;
 					distance = Distance(administer->dest->posx,administer->dest->posy,_iter->posx,_iter->posy);
 					refresh = true;//用于记录上一次的数据
+					_iter->flags = true;
 				}
 				if(refresh){
 					for(std::vector<Node>::iterator __iter = administer->AllNode.begin();__iter != administer->AllNode.end();++__iter){
@@ -309,6 +325,10 @@ void MainWindow::Greedy_Right_Method()
 		}
 	}
 
+}
+void MainWindow::FLDB_Method(Node* node)
+{
+	node->BPIT = 0.1;
 }
 MainWindow::~MainWindow()
 {

@@ -22,7 +22,7 @@ void Node::handleMessage(cMessage* msg,Administer* administer)
 	msg->speed = rand()%45;
 	msg->posx = posx + speed*0.1;
 	msg->posy = posy + speed*0.1;
-
+	msg->BPIT = BPIT;
 	msg->radius = radius;
 	msg->src_x = administer->src->posx;
 	msg->src_y = administer->src->posy;
