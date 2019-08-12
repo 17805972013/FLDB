@@ -21,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	initplot();
 	/* SLOT槽中的函数必须被定义在private slots:下才能调用 */
 	connect(&eventTimer, SIGNAL(timeout()), this, SLOT(UpdatePosition()));
-	eventTimer.start(300);
+	eventTimer.start(100);
 
 }
 void MainWindow::initplot()
@@ -67,7 +67,7 @@ void MainWindow::initplot()
 		node.BPIT = 0;
 		node.posx = x;
 		node.posy = y;
-		node.radius = 10;
+		node.radius = 15;
 		node.speed = 0;
 		node.flags = false;
 		node.NeighberNode = NULL;
@@ -329,6 +329,236 @@ void MainWindow::Greedy_Right_Method()
 void MainWindow::FLDB_Method(Node* node)
 {
 	node->BPIT = 0.1;
+	std::vector<double> Mem_NMS;
+	std::vector<double> Mem_Non;
+	std::vector<double> ActStr;
+	Mem_NMS = NMS(node->speed);
+	Mem_Non = NoNNs(node->NeighberNode->size());
+	for(std::vector<double>::iterator iter = Mem_NMS.begin();iter != Mem_NMS.end();++iter)
+		for(std::vector<double>::iterator _iter = Mem_Non.begin();_iter != Mem_Non.end();++_iter)
+		if(*iter > *_iter)
+			ActStr.push_back(*_iter);
+		else
+			ActStr.push_back(*iter);
+	/*for(std::vector<double>::iterator iter = ActStr.begin();iter!=ActStr.end();++iter)
+		qDebug().nospace()<<*iter;*/
+	double Mem_sum = 0;
+	node->BPIT = 0;
+	std::vector<double>::iterator iter = ActStr.begin();
+	for(int i = 0;i< Mem_NMS.size();++i)
+		for(int j = 0;j< Mem_Non.size();++j){
+			Mem_sum += *iter;
+			node->BPIT += BPITs(FLDB_Rule(i,j),*iter);
+			++iter;
+		}
+	node->BPIT /= Mem_sum;
+	qDebug().nospace()<<"NMS:"<<node->speed<<"NoNNs:"<<node->NeighberNode->size()<<"BPIT:"<<node->BPIT;
+}
+std::vector<double> MainWindow::NMS(double speed)
+{
+	double a = 1.3;
+	double b = 20.2;
+	double c = 36.6;
+	double d = 5.5;
+	double e = 13.6;
+	double f = 26.6;
+	double g = 39.3;
+	double h = 3.2;
+	double i = 19.4;
+	double j = 40;
+	std::vector<double> Mem_NMS;
+	/* Very low */
+	if(0<=speed && speed<=d)
+		Mem_NMS.push_back(1);
+	else if(d<speed && speed<=(d+e)/2)
+		Mem_NMS.push_back(1-((speed-d)/(e-d))*((speed-d)/(e-d)));
+	else if((d+e)/2<speed && speed<=e)
+		Mem_NMS.push_back(2*((speed-e)/(e-d))*((speed-e)/(e-d)));
+	else
+		Mem_NMS.push_back(0);
+	/* Low */
+	if(a<=speed && speed <=(a+b)/2)
+		Mem_NMS.push_back((speed-a)/((a+b)/2-a));
+	else if((a+b)/2<speed && speed<b)
+		Mem_NMS.push_back((b-speed)/(b-(a+b)/2));
+	else
+		Mem_NMS.push_back(0);
+	/* Medium */
+	if(h<=speed && speed<=(h+c)/2)
+		Mem_NMS.push_back((speed-h)/((h+c)/2-h));
+	else if((h+c)/2<speed && speed<c)
+		Mem_NMS.push_back((c-speed)/(c-(c+h)/2));
+	else
+		Mem_NMS.push_back(0);
+	/* High */
+	if(i<=speed && speed<=(i+g)/2)
+		Mem_NMS.push_back((speed-i)/((i+g)/2-i));
+	else if((i+g)/2<speed && speed<g)
+		Mem_NMS.push_back((g-speed)/(g-(g+i)/2));
+	else
+		Mem_NMS.push_back(0);
+	/* Very high */
+	if(speed>=j)
+		Mem_NMS.push_back(1);
+	else if(f<=speed && speed<=(f+j)/2)
+		Mem_NMS.push_back(2*((speed-f)/(j-f))*((speed-f)/(j-f)));
+	else if((f+j)/2<speed && speed<j)
+		Mem_NMS.push_back(1-2*((speed-j)/(j-f))*((speed-j)/(j-f)));
+	else
+		Mem_NMS.push_back(0);
+	return Mem_NMS;
+}
+std::vector<double> MainWindow::NoNNs(int Neighbernum)
+{
+	double a = 2;
+	double b = 3;
+	double c = 9;
+	double d = 16;
+	double e = 23;
+	double f = 29;
+	double g = 30;
+	std::vector<double> Mem_Non;
+	/* Very small */
+	if(0<=Neighbernum && Neighbernum<=a)
+		Mem_Non.push_back(1);
+	else if(a<Neighbernum && Neighbernum<=(a+c)/2)
+		Mem_Non.push_back(1-((Neighbernum-c)/(c-a))*((Neighbernum-c)/(c-a)));
+	else if((a+c)/2<Neighbernum && Neighbernum<=c)
+		Mem_Non.push_back(2*((Neighbernum-c)/(c-a))*((Neighbernum-c)/(c-a)));
+	else
+		Mem_Non.push_back(0);
+	/* Small */
+	if(a<=Neighbernum && Neighbernum<=(a+d)/2)
+		Mem_Non.push_back((Neighbernum-a)/((a+d)/2-a));
+	else if((a+d)/2<Neighbernum && Neighbernum <= d)
+		Mem_Non.push_back((d-Neighbernum)/(d-(a+d)/2));
+	else
+		Mem_Non.push_back(0);
+	/* Medium */
+	if(b<=Neighbernum && Neighbernum<=(b+f)/2)
+		Mem_Non.push_back((Neighbernum-b)/((b+f)/2-b));
+	else if((b+f)/2<Neighbernum && Neighbernum<=f)
+		Mem_Non.push_back((f-Neighbernum)/(f-(b+f)/2));
+	else
+		Mem_Non.push_back(0);
+	/* Large */
+	if(d<=Neighbernum && Neighbernum<=(d+g)/2)
+		Mem_Non.push_back((Neighbernum-d)/((d+g)/2-d));
+	else if((d+g)/2<Neighbernum && Neighbernum<=g)
+		Mem_Non.push_back((g-Neighbernum)/(g-(d+g)/2));
+	else
+		Mem_Non.push_back(0);
+	/* Very Large */
+	if(Neighbernum>=g)
+		Mem_Non.push_back(1);
+	else if(e<Neighbernum && Neighbernum<=(e+g)/2)
+		Mem_Non.push_back(2*((Neighbernum-e)/(g-e))*((Neighbernum-e)/(g-e)));
+	else if((e+g)/2<Neighbernum && Neighbernum<=g)
+		Mem_Non.push_back(1-2*((Neighbernum-g)/(g-e))*((Neighbernum-g)/(g-e)));
+	else
+		Mem_Non.push_back(0);
+	return Mem_Non;
+}
+int MainWindow::FLDB_Rule(int nms_pos, int non_pos)
+{
+	enum{s_verylow=0,s_low,s_medium,s_high,s_veryhigh};
+	enum{non_verysmall=0,non_small,non_medium,non_large,non_verylarge};
+	enum{bp_veryshort=0,bp_short,bp_medium,bp_long,bp_verylong};
+	if(nms_pos == s_verylow && non_pos == non_verysmall)
+		return bp_medium;
+	if(nms_pos == s_verylow && non_pos == non_small)
+		return bp_medium;
+	if(nms_pos == s_verylow && non_pos == non_medium)
+		return bp_long;
+	if(nms_pos == s_verylow && non_pos == non_large)
+		return bp_long;
+	if(nms_pos == s_verylow && non_pos == non_verylarge)
+		return bp_verylong;
+	if(nms_pos == s_low && non_pos == non_verysmall)
+		return bp_medium;
+	if(nms_pos == s_low && non_pos == non_small)
+		return bp_medium;
+	if(nms_pos == s_low && non_pos == non_medium)
+		return bp_medium;
+	if(nms_pos == s_low && non_pos == non_large)
+		return bp_long;
+	if(nms_pos == s_low && non_pos == non_verylarge)
+		return bp_verylong;
+	if(nms_pos == s_medium && non_pos == non_verysmall)
+		return bp_short;
+	if(nms_pos == s_medium && non_pos == non_small)
+		return bp_short;
+	if(nms_pos == s_medium && non_pos == non_medium)
+		return bp_medium;
+	if(nms_pos == s_medium && non_pos == non_large)
+		return bp_long;
+	if(nms_pos == s_medium && non_pos == non_verylarge)
+		return bp_long;
+	if(nms_pos == s_high && non_pos == non_verysmall)
+		return bp_veryshort;
+	if(nms_pos == s_high && non_pos == non_small)
+		return bp_short;
+	if(nms_pos == s_high && non_pos == non_medium)
+		return bp_medium;
+	if(nms_pos == s_high && non_pos == non_large)
+		return bp_medium;
+	if(nms_pos == s_high && non_pos == non_verylarge)
+		return bp_medium;
+	if(nms_pos == s_veryhigh && non_pos == non_verysmall)
+		return bp_veryshort;
+	if(nms_pos == s_veryhigh && non_pos == non_small)
+		return bp_short;
+	if(nms_pos == s_veryhigh && non_pos == non_medium)
+		return bp_short;
+	if(nms_pos == s_veryhigh && non_pos == non_large)
+		return bp_medium;
+	if(nms_pos == s_veryhigh && non_pos == non_verylarge)
+		return bp_medium;
+	return bp_verylong;
+}
+double MainWindow::BPITs(int bp_pos,double act)
+{
+	enum{bp_veryshort=0,bp_short,bp_medium,bp_long,bp_verylong};
+	switch(bp_pos)
+	{
+	/* Very short */
+	case bp_veryshort:
+	{
+		double a = 0;
+		double b = 2;
+		return (a+b)*act/2;
+	}
+	/* Short */
+	case bp_short:
+	{
+		double a = 0.5;
+		double b = 2.9;
+		return (a+b)*act/2;
+	}
+	/* Medium */
+	case bp_medium:
+	{
+		double a = 1.8;
+		double b = 4.3;
+		return (a+b)*act/2;
+	}
+	/* Long */
+	case bp_long:
+	{
+		double a = 3.1;
+		double b = 5.2;
+		return (a+b)*act/2;
+	}
+	/* Very long */
+	case bp_verylong:
+	{
+		double a = 4;
+		double b = 6;
+		return (a+b)*act/2;
+	}
+	default:
+		return -1;
+	}
 }
 MainWindow::~MainWindow()
 {

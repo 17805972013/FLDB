@@ -6,8 +6,8 @@
 #include <time.h>
 #include <sstream>
 #include "node.h"
-//#define RE_SEND
-#define NoRE_SEND
+#define RE_SEND
+//#define NoRE_SEND
 #define FLDB
 class Schedule;
 namespace Ui {
@@ -26,6 +26,10 @@ public:
 	bool FLDB_set;
 	double FLDB_t;
 	void FLDB_Method(Node* node);
+	std::vector<double> NMS(double speed);
+	std::vector<double> NoNNs(int Neighbernum);
+	int FLDB_Rule(int nms_pos,int non_pos);
+	double BPITs(int bp_pos,double act);
 	~MainWindow();
 private slots:
 	void UpdatePosition();
