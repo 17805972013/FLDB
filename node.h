@@ -41,6 +41,8 @@ public:
 	double posx,posy;
 	/* 邻居表 */
 	std::vector<Node>* NeighberNode;
+	/* 拒绝表 */
+	std::vector<Node> DefyTable;
 	/* 接收消息 */
 	void recvMessage(cMessage* msg);
 	/* 消息处理 */

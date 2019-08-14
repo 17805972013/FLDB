@@ -32,6 +32,7 @@ void MainWindow::initplot()
 	_gy = -10;
 	node_num = 30;
 	Innercircle = 4;
+	interval_num = 100;
 	interval_time = 0;
 	FLDB_set = true;
 	FLDB_t = 0;
@@ -89,7 +90,9 @@ void MainWindow::initplot()
 	}
 	/* 消息到达位置 */
 	administer->AllNode[src].flags = true;
-
+#ifdef DT
+	administer->src->DefyTable.clear();
+#endif
 			/*  画图操作 */
 			QPen _pen;
 			_pen.setColor(Qt::darkCyan);
@@ -168,6 +171,9 @@ void MainWindow::UpdatePosition()
 	/* 消息到达位置 */
 	Greedy_Right_Method();
 	if(administer->dest->flags){
+#ifdef DT
+		administer->src->DefyTable.clear();
+#endif
 		administer->src = administer->dest;
 		administer->dest = &administer->AllNode[rand()%node_num];
 		while(1){
@@ -207,7 +213,7 @@ void MainWindow::UpdatePosition()
 	#ifdef RE_SEND
 	bool _reset = false;
 	for(std::vector<Node>::iterator iter = administer->AllNode.begin();iter != administer->AllNode.end();++iter)
-		if(interval_time == 100){
+		if(interval_time == interval_num){
 			interval_time = 0;
 			_reset = true;
 		}
@@ -265,9 +271,24 @@ void MainWindow::Greedy_Right_Method()
 			/***********/
 			if(strcmp(administer->dest->name,iter->name) == 0)
 				return;
+#ifdef DT
+			Node *dnode = NULL;
+			bool d_flags = false;
+#endif
 			bool refresh = false;
 			for(std::vector<Node>::iterator _iter = iter->NeighberNode->begin();_iter != iter->NeighberNode->end();++_iter){
 				if(Distance(administer->dest->posx,administer->dest->posy,_iter->posx,_iter->posy) < distance ){
+#ifdef DT
+			for(std::vector<Node>::iterator d_iter = administer->src->DefyTable.begin();d_iter != administer->src->DefyTable.end();++d_iter)
+				if(strcmp(d_iter->name,_iter->name) == 0){
+					d_flags = true;
+				}
+			if(d_flags){
+				d_flags = false;
+				qDebug().nospace()<<"DT";
+				continue;
+			}
+#endif
 					sel = true;
 					distance = Distance(administer->dest->posx,administer->dest->posy,_iter->posx,_iter->posy);
 					refresh = true;//用于记录上一次的数据
@@ -277,6 +298,9 @@ void MainWindow::Greedy_Right_Method()
 					for(std::vector<Node>::iterator __iter = administer->AllNode.begin();__iter != administer->AllNode.end();++__iter){
 						if(strcmp(_iter->name,__iter->name) == 0){
 							__iter->flags = true;
+#ifdef DT
+							dnode = &(*__iter);
+#endif
 						}
 						else
 							__iter->flags = false;
@@ -308,6 +332,9 @@ void MainWindow::Greedy_Right_Method()
 						for(std::vector<Node>::iterator __iter = administer->AllNode.begin();__iter != administer->AllNode.end();++__iter){
 							if(strcmp(_iter->name,__iter->name) == 0){
 								__iter->flags = true;
+#ifdef DT
+							dnode = &(*__iter);
+#endif
 							}
 							else
 								__iter->flags = false;
@@ -319,6 +346,11 @@ void MainWindow::Greedy_Right_Method()
 						_refresh = false;
 					}
 				}
+#ifdef DT
+			if(strcmp(administer->src->name,iter->name) == 0 && interval_time == interval_num-1){
+					administer->src->DefyTable.push_back(*dnode);
+			}
+#endif
 
 			}
 			break;
@@ -328,7 +360,6 @@ void MainWindow::Greedy_Right_Method()
 }
 void MainWindow::FLDB_Method(Node* node)
 {
-	node->BPIT = 0.1;
 	std::vector<double> Mem_NMS;
 	std::vector<double> Mem_Non;
 	std::vector<double> ActStr;
@@ -345,14 +376,14 @@ void MainWindow::FLDB_Method(Node* node)
 	double Mem_sum = 0;
 	node->BPIT = 0;
 	std::vector<double>::iterator iter = ActStr.begin();
-	for(int i = 0;i< Mem_NMS.size();++i)
-		for(int j = 0;j< Mem_Non.size();++j){
+	for(int i = 0;i<(int)Mem_NMS.size();++i)
+		for(int j = 0;j<(int)Mem_Non.size();++j){
 			Mem_sum += *iter;
 			node->BPIT += BPITs(FLDB_Rule(i,j),*iter);
 			++iter;
 		}
 	node->BPIT /= Mem_sum;
-	qDebug().nospace()<<"NMS:"<<node->speed<<"NoNNs:"<<node->NeighberNode->size()<<"BPIT:"<<node->BPIT;
+	qDebug().nospace()<<"NMS:"<<node->speed<<" NoNNs:"<<node->NeighberNode->size()<<" BPIT:"<<node->BPIT;
 }
 std::vector<double> MainWindow::NMS(double speed)
 {

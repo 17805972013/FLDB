@@ -9,6 +9,7 @@
 #define RE_SEND
 //#define NoRE_SEND
 #define FLDB
+#define DT
 class Schedule;
 namespace Ui {
 class MainWindow;
@@ -49,6 +50,7 @@ private:
 	double _gy;
 	/* 重发时间间隔 */
 	int interval_time;
+	int interval_num;
 
 
 
